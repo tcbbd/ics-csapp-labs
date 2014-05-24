@@ -1,0 +1,343 @@
+#/* $begin ncopy-ys */
+##################################################################
+# ncopy.ys - Copy a src block of len ints to dst.
+# Return the number of positive ints (>0) contained in src.
+#
+# Name:丁卓成 ID:5120379064
+#
+# Use loop unrolling technique
+# Use load forwarding to avoid load/use hazard in mrmovl + rmmovl combination
+# Use iaddl instead of irmovl + addl
+# Use jump table for the rest elements instead of
+#   condition branches such as "16+8+4+1" for better performance
+# Use andl + mrmovl + rmmovl + jle combination so that with the help
+# of HCL, jle would cause no mispredict punishment
+#
+##################################################################
+# Do not modify this portion
+# Function prologue.
+ncopy:	pushl %ebp		# Save old frame pointer
+	rrmovl %esp,%ebp	# Set up new frame pointer
+	pushl %esi		    # Save callee-save regs
+	pushl %ebx
+	pushl %edi
+	mrmovl 8(%ebp),%ebx 	# src
+	mrmovl 16(%ebp),%edx	# len
+	mrmovl 12(%ebp),%ecx	# dst
+
+##################################################################
+# You can modify this portion
+	# Loop header
+	xorl %eax,%eax		# count = 0;
+    iaddl $-11,%edx     # len <= 11?
+	jle Loop12_close	# if so, goto Loop12_close:
+
+Loop12_1: iaddl $-1,%edx    # len -= 1(-12 in all)
+    iaddl $48,%ebx          # src++
+    iaddl $48,%ecx          # dst++
+    mrmovl -48(%ebx),%esi   # read val1 from src...
+    # optimized combination
+	andl %esi,%esi		    # val1 <= 0?
+    mrmovl -44(%ebx),%edi   # read val2 from src...
+	rmmovl %esi,-48(%ecx)   # ...and store val1 to dst
+    jle Loop12_2            # if so, goto Loop12_2:
+    # optimized combination
+	iaddl $1,%eax		    # count++
+
+    # optimized combination
+Loop12_2: andl %edi,%edi    # val2 <= 0?
+    mrmovl -40(%ebx),%esi   # read val3 from src...
+    rmmovl %edi,-44(%ecx)   # ...and store val2 to dst
+    jle Loop12_3            # if so, goto Loop12_3:
+    # optimized combination
+    iaddl $1,%eax           # count++
+
+    # optimized combination
+Loop12_3: andl %esi,%esi	# val3 <= 0?
+    mrmovl -36(%ebx),%edi   # read val4 from src...
+	rmmovl %esi,-40(%ecx)   # ...and store val3 to dst
+    jle Loop12_4            # if so, goto Loop12_4:
+    # optimized combination
+	iaddl $1,%eax		    # count++
+
+    # optimized combination
+Loop12_4: andl %edi,%edi    # val4 <= 0?
+    mrmovl -32(%ebx),%esi   # read val5 from src...
+    rmmovl %edi,-36(%ecx)   # ...and store val4 to dst
+    jle Loop12_5            # if so, goto Loop12_5:
+    # optimized combination
+    iaddl $1,%eax           # count++
+
+    # optimized combination
+Loop12_5: andl %esi,%esi	# val5 <= 0?
+    mrmovl -28(%ebx),%edi   # read val6 from src...
+	rmmovl %esi,-32(%ecx)   # ...and store val5 to dst
+    jle Loop12_6            # if so, goto Loop12_6:
+    # optimized combination
+	iaddl $1,%eax		    # count++
+
+    # optimized combination
+Loop12_6: andl %edi,%edi    # val6 <= 0?
+    mrmovl -24(%ebx),%esi   # read val7 from src...
+    rmmovl %edi,-28(%ecx)   # ...and store val6 to dst
+    jle Loop12_7            # if so, goto Loop12_7:
+    # optimized combination
+    iaddl $1,%eax           # count++
+
+    # optimized combination
+Loop12_7: andl %esi,%esi	# val7 <= 0?
+    mrmovl -20(%ebx),%edi   # read val8 from src...
+	rmmovl %esi,-24(%ecx)   # ...and store val7 to dst
+    jle Loop12_8            # if so, goto Loop12_8:
+    # optimized combination
+	iaddl $1,%eax		    # count++
+
+    # optimized combination
+Loop12_8: andl %edi,%edi    # val8 <= 0?
+    mrmovl -16(%ebx),%esi   # read val9 from src...
+    rmmovl %edi,-20(%ecx)   # ...and store val8 to dst
+    jle Loop12_9            # if so, goto Loop12_9:
+    # optimized combination
+    iaddl $1,%eax           # count++
+
+    # optimized combination
+Loop12_9: andl %esi,%esi	# val9 <= 0?
+    mrmovl -12(%ebx),%edi   # read val10 from src...
+	rmmovl %esi,-16(%ecx)   # ...and store val9 to dst
+    jle Loop12_10           # if so, goto Loop12_10:
+    # optimized combination
+	iaddl $1,%eax		    # count++
+
+    # optimized combination
+Loop12_10: andl %edi,%edi   # val10 <= 0?
+    mrmovl -8(%ebx),%esi    # read val11 from src...
+    rmmovl %edi,-12(%ecx)   # ...and store val10 to dst
+    jle Loop12_11           # if so, goto Loop12_11:
+    # optimized combination
+    iaddl $1,%eax           # count++
+
+    # optimized combination
+Loop12_11: andl %esi,%esi	# val11 <= 0?
+    mrmovl -4(%ebx),%edi    # read val12 from src...
+	rmmovl %esi,-8(%ecx)    # ...and store val11 to dst
+    jle Loop12_12           # if so, goto Loop12_12:
+    # optimized combination
+	iaddl $1,%eax		    # count++
+
+    # optimized combination
+Loop12_12: andl %edi,%edi   # val12 <= 0?
+    rmmovl %edi,-4(%ecx)    # ...and store val12 to dst
+    jle Rest12              # if so, goto Rest12:
+    # optimized combination
+    iaddl $1,%eax           # count++
+
+Rest12: iaddl $-11,%edx     # len > 11?
+    jg Loop12_1             # if so, goto Loop12_1:
+
+Loop12_close: addl %edx,%edx # now -11 <= len <= 0
+    addl %edx,%edx          # len *= 4
+    mrmovl Jump_Table(%edx),%edx
+    pushl %edx
+    ret
+
+# Jump Table No.1
+
+Jump12_10:  mrmovl 36(%ebx),%esi #read val1 from src...
+    # optimized combination
+    andl %esi,%esi          # val1 <= 0?
+    mrmovl 32(%ebx),%edi    # read val2 from src...
+    rmmovl %esi,36(%ecx)    # ...and store val1 to dst
+    jle JumpPos12_10        # if so, goto JumpPos12_10:
+    # optimized combination
+    iaddl $1,%eax           # count++
+    # optimized combination
+JumpPos12_10: andl %edi,%edi # val2 <= 0?
+    rmmovl %edi,32(%ecx)    # ...and store val2 to dst
+    jle Jump12_8            # if so, goto Jump12_8:
+    # optimized combination
+	iaddl $1,%eax		    # count++
+
+Jump12_8:  mrmovl 28(%ebx),%esi #read val1 from src...
+    # optimized combination
+    andl %esi,%esi          # val1 <= 0?
+    mrmovl 24(%ebx),%edi    # read val2 from src...
+    rmmovl %esi,28(%ecx)    # ...and store val1 to dst
+    jle JumpPos12_8         # if so, goto JumpPos12_8:
+    # optimized combination
+    iaddl $1,%eax           # count++
+    # optimized combination
+JumpPos12_8: andl %edi,%edi # val2 <= 0?
+    rmmovl %edi,24(%ecx)    # ...and store val2 to dst
+    jle Jump12_6            # if so, goto Jump12_6:
+    # optimized combination
+	iaddl $1,%eax		    # count++
+
+Jump12_6:  mrmovl 20(%ebx),%esi #read val1 from src...
+    # optimized combination
+    andl %esi,%esi          # val1 <= 0?
+    mrmovl 16(%ebx),%edi    # read val2 from src...
+    rmmovl %esi,20(%ecx)    # ...and store val1 to dst
+    jle JumpPos12_6         # if so, goto JumpPos12_6:
+    # optimized combination
+    iaddl $1,%eax           # count++
+    # optimized combination
+JumpPos12_6: andl %edi,%edi # val2 <= 0?
+    rmmovl %edi,16(%ecx)    # ...and store val2 to dst
+    jle Jump12_4            # if so, goto Jump12_4:
+    # optimized combination
+	iaddl $1,%eax		    # count++
+
+Jump12_4:  mrmovl 12(%ebx),%esi #read val1 from src...
+    # optimized combination
+    andl %esi,%esi          # val1 <= 0?
+    mrmovl 8(%ebx),%edi     # read val2 from src...
+    rmmovl %esi,12(%ecx)    # ...and store val1 to dst
+    jle JumpPos12_4         # if so, goto JumpPos12_4:
+    # optimized combination
+    iaddl $1,%eax           # count++
+    # optimized combination
+JumpPos12_4: andl %edi,%edi # val2 <= 0?
+    rmmovl %edi,8(%ecx)     # ...and store val2 to dst
+    jle Jump12_2            # if so, goto Jump12_2:
+    # optimized combination
+	iaddl $1,%eax		    # count++
+
+Jump12_2:  mrmovl 4(%ebx),%esi #read val1 from src...
+    # optimized combination
+    andl %esi,%esi          # val1 <= 0?
+    mrmovl (%ebx),%edi      # read val2 from src...
+    rmmovl %esi,4(%ecx)     # ...and store val1 to dst
+    jle JumpPos12_2         # if so, goto JumpPos12_2:
+    # optimized combination
+    iaddl $1,%eax           # count++
+    # optimized combination
+JumpPos12_2: andl %edi,%edi # val2 <= 0?
+    rmmovl %edi,(%ecx)      # ...and store val2 to dst
+    jle done                # if so, goto done:
+    # optimized combination
+	iaddl $1,%eax		    # count++
+
+	popl %edi               # Restore callee-save registers
+	popl %ebx
+	popl %esi
+    leave
+    ret
+
+# Jump Table No.2
+
+Jump12_11:  mrmovl 40(%ebx),%esi #read val1 from src...
+    # optimized combination
+    andl %esi,%esi          # val1 <= 0?
+    mrmovl 36(%ebx),%edi    # read val2 from src...
+    rmmovl %esi,40(%ecx)    # ...and store val1 to dst
+    jle JumpPos12_11        # if so, goto JumpPos12_11:
+    # optimized combination
+    iaddl $1,%eax           # count++
+    # optimized combination
+JumpPos12_11: andl %edi,%edi # val2 <= 0?
+    rmmovl %edi,36(%ecx)    # ...and store val2 to dst
+    jle Jump12_9            # if so, goto Jump12_9:
+    # optimized combination
+	iaddl $1,%eax		    # count++
+
+Jump12_9:  mrmovl 32(%ebx),%esi #read val1 from src...
+    # optimized combination
+    andl %esi,%esi          # val1 <= 0?
+    mrmovl 28(%ebx),%edi    # read val2 from src...
+    rmmovl %esi,32(%ecx)    # ...and store val1 to dst
+    jle JumpPos12_9         # if so, goto JumpPos12_9:
+    # optimized combination
+    iaddl $1,%eax           # count++
+    # optimized combination
+JumpPos12_9: andl %edi,%edi # val2 <= 0?
+    rmmovl %edi,28(%ecx)    # ...and store val2 to dst
+    jle Jump12_7            # if so, goto Jump12_7:
+    # optimized combination
+	iaddl $1,%eax		    # count++
+
+Jump12_7:  mrmovl 24(%ebx),%esi #read val1 from src...
+    # optimized combination
+    andl %esi,%esi          # val1 <= 0?
+    mrmovl 20(%ebx),%edi    # read val2 from src...
+    rmmovl %esi,24(%ecx)    # ...and store val1 to dst
+    jle JumpPos12_7         # if so, goto JumpPos12_7:
+    # optimized combination
+    iaddl $1,%eax           # count++
+    # optimized combination
+JumpPos12_7: andl %edi,%edi # val2 <= 0?
+    rmmovl %edi,20(%ecx)    # ...and store val2 to dst
+    jle Jump12_5            # if so, goto Jump12_5:
+    # optimized combination
+	iaddl $1,%eax		    # count++
+
+Jump12_5:  mrmovl 16(%ebx),%esi #read val1 from src...
+    # optimized combination
+    andl %esi,%esi          # val1 <= 0?
+    mrmovl 12(%ebx),%edi    # read val2 from src...
+    rmmovl %esi,16(%ecx)    # ...and store val1 to dst
+    jle JumpPos12_5         # if so, goto JumpPos12_5:
+    # optimized combination
+    iaddl $1,%eax           # count++
+    # optimized combination
+JumpPos12_5: andl %edi,%edi # val2 <= 0?
+    rmmovl %edi,12(%ecx)    # ...and store val2 to dst
+    jle Jump12_3            # if so, goto Jump12_3:
+    # optimized combination
+	iaddl $1,%eax		    # count++
+
+Jump12_3:  mrmovl 8(%ebx),%esi #read val1 from src...
+    # optimized combination
+    andl %esi,%esi          # val1 <= 0?
+    mrmovl 4(%ebx),%edi     # read val2 from src...
+    rmmovl %esi,8(%ecx)     # ...and store val1 to dst
+    jle JumpPos12_3         # if so, goto JumpPos12_3:
+    # optimized combination
+    iaddl $1,%eax           # count++
+    # optimized combination
+JumpPos12_3: andl %edi,%edi # val2 <= 0?
+    rmmovl %edi,4(%ecx)     # ...and store val2 to dst
+    jle Jump12_1            # if so, goto Jump12_1:
+    # optimized combination
+	iaddl $1,%eax		    # count++
+
+Jump12_1:  mrmovl (%ebx),%esi #read val from src...
+    andl %esi,%esi          # val <= 0?
+    rmmovl %esi,(%ecx)      # ...and store it to dst
+    jle done                # if so, goto done:
+    iaddl $1,%eax           # count++
+
+# Function epilogue with leave
+done:
+	popl %edi               # Restore callee-save registers
+	popl %ebx
+	popl %esi
+    leave
+    ret
+
+    .long done
+    .long Jump12_1
+    .long Jump12_2
+    .long Jump12_3
+    .long Jump12_4
+    .long Jump12_5
+    .long Jump12_6
+    .long Jump12_7
+    .long Jump12_8
+    .long Jump12_9
+    .long Jump12_10
+Jump_Table:    .long Jump12_11
+
+##################################################################
+# Do not modify the following section of code
+# Function epilogue.
+Done:
+	popl %edi               # Restore callee-save registers
+	popl %ebx
+	popl %esi
+	rrmovl %ebp, %esp
+	popl %ebp
+	ret
+##################################################################
+# Keep the following label at the end of your function
+End:
+#/* $end ncopy-ys */

@@ -1,0 +1,116 @@
+                      | #######################################################################
+                      | # Test for copying block of size 4;
+                      | #######################################################################
+  0x000:              | 	.pos 0
+  0x000: 30f408010000 | main:	irmovl Stack, %esp  	# Set up stack pointer
+  0x006: 30f508010000 | 	irmovl Stack, %ebp  	# Set up base pointer
+                      | 
+                      | 	# Set up arguments for copy function and then invoke it
+  0x00c: 30f004000000 | 	irmovl $4, %eax		# src and dst have 4 elements
+  0x012: a00f         | 	pushl %eax
+  0x014: 30f0b4000000 | 	irmovl dest, %eax	# dst array
+  0x01a: a00f         | 	pushl %eax
+  0x01c: 30f090000000 | 	irmovl src, %eax	# src array
+  0x022: a00f         | 	pushl %eax
+  0x024: 802a000000   | 	call ncopy		 
+  0x029: 00           | 	halt			# should halt with num nonzeros in %eax
+  0x02a:              | StartFun:
+                      | #/* $begin ncopy-ys */
+                      | ##################################################################
+                      | # ncopy.ys - Copy a src block of len ints to dst.
+                      | # Return the number of positive ints (>0) contained in src.
+                      | #
+                      | # Include your name and ID here.
+                      | #
+                      | # Describe how and why you modified the baseline code.
+                      | #
+                      | ##################################################################
+                      | # Do not modify this portion
+                      | # Function prologue.
+  0x02a: a05f         | ncopy:	pushl %ebp		# Save old frame pointer
+  0x02c: 2045         | 	rrmovl %esp,%ebp	# Set up new frame pointer
+  0x02e: a06f         | 	pushl %esi		# Save callee-save regs
+  0x030: a03f         | 	pushl %ebx
+  0x032: a07f         | 	pushl %edi
+  0x034: 503508000000 | 	mrmovl 8(%ebp),%ebx	# src
+  0x03a: 502510000000 | 	mrmovl 16(%ebp),%edx	# len
+  0x040: 50150c000000 | 	mrmovl 12(%ebp),%ecx	# dst
+                      | 
+                      | ##################################################################
+                      | # You can modify this portion
+                      | 	# Loop header
+  0x046: 6300         | 	xorl %eax,%eax		# count = 0;
+  0x048: 6222         | 	andl %edx,%edx		# len <= 0?
+  0x04a: 7183000000   | 	jle Done		# if so, goto Done:
+                      | 
+  0x04f: 506300000000 | Loop:	mrmovl (%ebx), %esi	# read val from src...
+  0x055: 406100000000 | 	rmmovl %esi, (%ecx)	# ...and store it to dst
+  0x05b: 6266         | 	andl %esi, %esi		# val <= 0?
+  0x05d: 716a000000   | 	jle Npos		# if so, goto Npos:
+  0x062: 30f701000000 | 	irmovl $1, %edi
+  0x068: 6070         | 	addl %edi, %eax		# count++
+  0x06a: 30f701000000 | Npos:	irmovl $1, %edi
+  0x070: 6172         | 	subl %edi, %edx		# len--
+  0x072: 30f704000000 | 	irmovl $4, %edi
+  0x078: 6073         | 	addl %edi, %ebx		# src++
+  0x07a: 6071         | 	addl %edi, %ecx		# dst++
+  0x07c: 6222         | 	andl %edx,%edx		# len > 0?
+  0x07e: 764f000000   | 	jg Loop			# if so, goto Loop:
+                      | ##################################################################
+                      | # Do not modify the following section of code
+                      | # Function epilogue.
+  0x083:              | Done:
+  0x083: b07f         | 	popl %edi               # Restore callee-save registers
+  0x085: b03f         | 	popl %ebx
+  0x087: b06f         | 	popl %esi
+  0x089: 2054         | 	rrmovl %ebp, %esp
+  0x08b: b05f         | 	popl %ebp
+  0x08d: 90           | 	ret
+                      | ##################################################################
+                      | # Keep the following label at the end of your function
+  0x08e:              | End:
+                      | #/* $end ncopy-ys */
+  0x08e:              | EndFun:
+                      | 
+                      | ###############################
+                      | # Source and destination blocks 
+                      | ###############################
+  0x090:              | 	.align 4
+  0x090:              | src:
+  0x090: ffffffff     | 	.long -1
+  0x094: 02000000     | 	.long 2
+  0x098: fdffffff     | 	.long -3
+  0x09c: 04000000     | 	.long 4
+  0x0a0: fadebc00     | 	.long 0xbcdefa # This shouldn't get moved
+                      | 
+  0x0b0:              | 	.align 16
+  0x0b0:              | Predest:
+  0x0b0: fadebc00     | 	.long 0xbcdefa
+  0x0b4:              | dest:
+  0x0b4: abefcd00     | 	.long 0xcdefab
+  0x0b8: abefcd00     | 	.long 0xcdefab
+  0x0bc: abefcd00     | 	.long 0xcdefab
+  0x0c0: abefcd00     | 	.long 0xcdefab
+  0x0c4:              | Postdest:
+  0x0c4: bcfade00     | 	.long 0xdefabc
+                      | 
+  0x0c8:              | .align 4
+                      | # Run time stack
+  0x0c8: 00000000     | 	.long 0
+  0x0cc: 00000000     | 	.long 0
+  0x0d0: 00000000     | 	.long 0
+  0x0d4: 00000000     | 	.long 0
+  0x0d8: 00000000     | 	.long 0
+  0x0dc: 00000000     | 	.long 0
+  0x0e0: 00000000     | 	.long 0
+  0x0e4: 00000000     | 	.long 0
+  0x0e8: 00000000     | 	.long 0
+  0x0ec: 00000000     | 	.long 0
+  0x0f0: 00000000     | 	.long 0
+  0x0f4: 00000000     | 	.long 0
+  0x0f8: 00000000     | 	.long 0
+  0x0fc: 00000000     | 	.long 0
+  0x100: 00000000     | 	.long 0
+  0x104: 00000000     | 	.long 0
+                      | 
+  0x108:              | Stack:
